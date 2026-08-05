@@ -135,6 +135,24 @@
       }
       .st.bad { color: #ff7b72; background: rgba(255,123,114,.12); }
 
+      .keyfacts {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 11px 14px;
+        padding: 11px; border-bottom: 1px solid #2e333a; background: #1b1e23;
+      }
+      .kf { min-width: 0; }
+      .kf.wide { grid-column: 1 / -1; }
+      .kf .k {
+        font: 600 9.5px system-ui, sans-serif; letter-spacing: .07em;
+        text-transform: uppercase; color: #6b7480; margin-bottom: 3px;
+      }
+      .kf .v { font-size: 14px; font-weight: 600; color: #e6e8ea; line-height: 1.25; }
+      .kf .v.good { color: #4fc07d; }
+      .kf .v.warn { color: #e3b341; }
+      .kf .sub {
+        font: 10px ui-monospace, Consolas, monospace; color: #949ba5; margin-top: 2px;
+        overflow-wrap: anywhere;
+      }
+
       .kv {
         display: grid; grid-template-columns: auto 1fr; gap: 3px 10px;
         margin: 0; padding: 8px 11px; font-size: 11.5px;
@@ -212,6 +230,70 @@
     return n;
   };
 
+  // The three things people actually check — whether anything is needed from
+  // them, how long since the case moved, and which office holds it — get their
+  // own block above the detail grid rather than being one row among many.
+  function keyFacts(s) {
+    const wrap = el("div", "keyfacts");
+
+    // Tone is passed explicitly rather than inferred from the class string —
+    // inferring it silently lost the colour as soon as a layout class was added.
+    const cell = ({ cls = "", label, value, sub, title, tone = "" }) => {
+      const c = el("div", `kf ${cls}`.trim());
+      c.appendChild(el("div", "k", label));
+      c.appendChild(el("div", `v ${tone}`.trim(), value));
+      if (sub) c.appendChild(el("div", "sub", sub));
+      if (title) c.title = title;
+      return c;
+    };
+
+    const extras = [];
+    if (s.closed) extras.push("closed");
+    if (s.premium) extras.push("premium processing");
+    wrap.appendChild(
+      cell({
+        cls: "wide",
+        label: "Status",
+        value: s.actionRequired ? "Action required" : "No action needed",
+        sub: extras.join(" · "),
+        tone: s.actionRequired ? "warn" : "good",
+      })
+    );
+
+    const office = codes.office(s.receipt);
+    const hasOffice = !!(office && (office.name || office.code));
+
+    if (s.updated) {
+      const exact = F.stamp(s.updatedStamp) || s.updated;
+      const ago = F.daysAgo(s.updatedStamp || s.updated);
+      wrap.appendChild(
+        cell({
+          cls: hasOffice ? "" : "wide",
+          label: "Last updated",
+          value: ago || exact,
+          sub: ago ? exact : "",
+          title: s.updatedStamp || "",
+        })
+      );
+    }
+
+    // /cases carries no location; the office comes from case_status, which the
+    // page fetches anyway.
+    if (hasOffice) {
+      wrap.appendChild(
+        cell({
+          cls: s.updated ? "" : "wide",
+          label: "Location",
+          value: office.name || office.code,
+          sub: office.name && office.code ? office.code : "",
+          title: office.raw,
+        })
+      );
+    }
+
+    return wrap;
+  }
+
   function kvBlock(s) {
     const dl = el("dl", "kv");
     const add = (k, node) => {
@@ -230,21 +312,6 @@
       if (s.filedStamp) dd.title = s.filedStamp;
       add("filed", dd);
     }
-    if (s.updated) {
-      const dd = el("dd", null, F.stamp(s.updatedStamp) || s.updated);
-      const ago = F.daysAgo(s.updatedStamp || s.updated);
-      if (ago) dd.appendChild(el("span", "dim", `  (${ago})`));
-      if (s.updatedStamp) dd.title = s.updatedStamp;
-      add("updated", dd);
-    }
-
-    const flags = el("dd");
-    flags.appendChild(
-      el("span", s.actionRequired ? "warn" : "good", s.actionRequired ? "action required" : "no action needed")
-    );
-    if (s.closed) flags.appendChild(el("span", "dim", " · closed"));
-    if (s.premium) flags.appendChild(el("span", "dim", " · premium"));
-    add("status", flags);
 
     const c = s.counts;
     const bits = [];
@@ -410,6 +477,7 @@
     body.appendChild(chead);
 
     if (s) {
+      body.appendChild(keyFacts(s));
       body.appendChild(kvBlock(s));
       const n = noticesBlock(s);
       if (n) body.appendChild(n);

@@ -102,17 +102,34 @@ globalThis.USCISFmt = (() => {
     return `${days}d ago`;
   };
 
-  // USCIS ships the human wording for its own action codes inside case_status —
-  // currentActionCode/statusTitle and historicalCaseStatuses[].actionCode. Mine
-  // those so the raw eventCodes in /cases can be labelled without guesswork.
-  // case_status itself is never displayed; it's only a source of receipts and
-  // of these labels.
+  // Office names arrive shouting ("NATIONAL BENEFITS CENTER"). Title-case the
+  // words but leave short tokens alone so centre codes like NBC or TSC survive.
+  const SMALL_WORDS = new Set(["of", "the", "and", "for", "at", "in", "on"]);
+  const titleCase = (s) =>
+    String(s)
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w, i) => {
+        if (SMALL_WORDS.has(w)) return i === 0 ? w[0].toUpperCase() + w.slice(1) : w;
+        if (w.length <= 3) return w.toUpperCase();
+        return w[0].toUpperCase() + w.slice(1);
+      })
+      .join(" ");
+
+  // case_status is never displayed, but it is the only place two things live:
+  //   * the human wording for USCIS's own action codes (currentActionCode /
+  //     statusTitle, and historicalCaseStatuses[].actionCode / statusTitle), so
+  //     the raw eventCodes in /cases can be labelled without guesswork
+  //   * jurisdiction / jurisdictionDescription — the office handling the case,
+  //     which /cases does not return at all
   //
-  // Keyed per receipt as well as globally: the same code can carry form-specific
-  // wording, and a single flat map would let one case's text overwrite another's.
+  // Labels are keyed per receipt as well as globally: the same code can carry
+  // form-specific wording, and a flat map would let one case overwrite another.
   const codeMapFrom = (captures) => {
     const byReceipt = {};
     const byCode = {};
+    const offices = {};
     for (const c of captures || []) {
       if (!/\/case_status\//.test(c.url || "")) continue;
       const d = unwrap(c.body);
@@ -125,11 +142,20 @@ globalThis.USCISFmt = (() => {
       };
       put(d.currentActionCode, d.statusTitle);
       for (const h of d.historicalCaseStatuses || []) put(h.actionCode, h.statusTitle);
+
+      if (rn && (d.jurisdiction || d.jurisdictionDescription)) {
+        offices[rn] = {
+          code: d.jurisdiction || "",
+          name: d.jurisdictionDescription ? titleCase(d.jurisdictionDescription) : "",
+          raw: d.jurisdictionDescription || d.jurisdiction || "",
+        };
+      }
     }
     return {
       byReceipt,
       byCode,
       label: (receipt, code) => (byReceipt[receipt] && byReceipt[receipt][code]) || byCode[code] || "",
+      office: (receipt) => offices[receipt] || null,
     };
   };
 
@@ -289,6 +315,7 @@ globalThis.USCISFmt = (() => {
     unwrap,
     daysAgo,
     stamp,
+    titleCase,
     codeMapFrom,
     eventRows,
     summarize,

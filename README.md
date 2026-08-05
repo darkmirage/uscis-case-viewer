@@ -40,9 +40,20 @@ The panel finds your cases on its own — you don't have to tell it anything.
 
 ### What each case shows
 
+Three things sit at the top, in larger type, because they're what you actually
+check:
+
+| | |
+| --- | --- |
+| **Status** | Whether anything is needed from you |
+| **Last updated** | How long since the record changed, with the exact time beneath |
+| **Location** | The USCIS office handling the case (e.g. National Benefits Center) |
+
+Then the rest:
+
 | Section | What's in it |
 | --- | --- |
-| **Summary** | Form type and full name, when you filed, when the record last changed, and whether anything is needed from you |
+| **Details** | Form type and full name, and when you filed |
 | **Notices** | Letters USCIS generated, including appointment dates |
 | **Events** | The internal history of the case, newest first |
 | **Flags** | Yes/no markers USCIS tracks internally |
