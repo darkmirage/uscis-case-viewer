@@ -1,0 +1,6 @@
+# Store text as LF in the repo and check it out as LF everywhere. Without this,
+# Windows' autocrlf rewrites every file on checkout and the first commit from
+# another machine shows as a whole-file diff.
+* text=auto eol=lf
+
+*.png binary
