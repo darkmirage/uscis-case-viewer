@@ -1,0 +1,21 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Local scratch: test harness files are written into the extension root while
+# running the self-tests, then deleted. Ignore them so a stray one is never
+# committed into a published extension.
+_*.html
+_*.js
+_*.py
+
+# Fixture tree served by the local test server
+/account/
+
+# Packaged builds
+*.zip
+*.crx
+*.pem

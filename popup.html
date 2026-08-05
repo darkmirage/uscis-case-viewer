@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>USCIS Case Viewer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="popup">
+    <header>
+      <h1>USCIS Case API <span class="count" id="count"></span></h1>
+      <div class="toolbar">
+        <button id="refresh">Refresh</button>
+        <button id="clear">Clear</button>
+        <button id="download">Download JSON</button>
+        <button id="openTab">Open in tab</button>
+        <label class="check"><input type="checkbox" id="reveal" /> show auth headers</label>
+      </div>
+      <div class="manual">
+        <input
+          type="text"
+          id="manualUrl"
+          value="https://my.uscis.gov/account/case-service/api/cases"
+          spellcheck="false"
+        />
+        <button id="manualGo" class="primary">GET</button>
+      </div>
+      <div class="cases" id="cases"></div>
+      <div class="notice" id="notice"></div>
+    </header>
+    <main id="list"></main>
+    <script src="format.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
