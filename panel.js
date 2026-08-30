@@ -37,6 +37,33 @@
     });
 
   const detailUrl = (r) => `https://my.uscis.gov/account/case-service/api/cases/${r}`;
+  const statusUrl = (r) => `https://my.uscis.gov/account/case-service/api/case_status/${r}`;
+
+  const statusRecord = (receipt) => {
+    const url = statusUrl(receipt);
+    return captures.find((c) => c.url === url || String(c.url || "").startsWith(`${url}?`));
+  };
+
+  const responseValue = (rec) => {
+    if (!rec) return null;
+    try {
+      return JSON.parse(rec.body);
+    } catch (_) {
+      return rec.body || null;
+    }
+  };
+
+  // Keep the two independently returned USCIS payloads separate so copied JSON
+  // remains faithful to each endpoint while still being useful as one artifact.
+  const combinedBody = (detail, status) =>
+    JSON.stringify(
+      {
+        cases: responseValue(detail),
+        case_status: responseValue(status),
+      },
+      null,
+      2
+    );
 
   // A successful load needs no announcement — "200" means nothing to a reader
   // who isn't debugging. Only failures get surfaced, in plain language, with the
@@ -407,7 +434,7 @@
 
     const cases = receipts.map((r) => {
       const rec = captures.find((c) => c.url === detailUrl(r));
-      return { r, rec, s: rec ? F.summarize(rec.body) : null };
+      return { r, rec, statusRec: statusRecord(r), s: rec ? F.summarize(rec.body) : null };
     });
 
     // Every case belongs to the same person in the common case; showing the name
@@ -464,7 +491,8 @@
       return;
     }
 
-    const { r, rec, s } = current;
+    const { r, rec, statusRec, s } = current;
+    const rawResponses = combinedBody(rec, statusRec);
 
     const chead = el("div", "case-head");
     chead.appendChild(el("span", "rn", r));
@@ -489,8 +517,10 @@
 
     const row = el("div", "row");
     const copy = el("button", null, "Copy JSON");
-    copy.addEventListener("click", () => navigator.clipboard.writeText(F.prettyBody(rec.body)));
+    copy.title = "Copy the /cases and /case_status responses";
+    copy.addEventListener("click", () => navigator.clipboard.writeText(rawResponses));
     const rawBtn = el("button", showRaw === "json" ? "on" : null, "Raw JSON");
+    rawBtn.title = "Show the /cases and /case_status responses";
     rawBtn.addEventListener("click", () => {
       showRaw = showRaw === "json" ? false : "json";
       render();
@@ -509,7 +539,7 @@
     // unbounded.
     if (showRaw === "json" || !s) {
       const pre = el("pre");
-      pre.innerHTML = F.bodyHtml(rec.body);
+      pre.innerHTML = F.bodyHtml(rawResponses);
       body.appendChild(pre);
     } else if (showRaw === "headers") {
       const pre = el("pre");
@@ -519,8 +549,8 @@
       )}`;
       body.appendChild(pre);
     }
-    // case_status and /documents are deliberately never rendered — they only
-    // serve to discover receipts and to label event codes. The popup lists them.
+    // /documents is deliberately never rendered. case_status is included in the
+    // raw/copy bundle and also supplies event labels and the office above.
   }
 
   // --- data ----------------------------------------------------------------

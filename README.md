@@ -68,8 +68,8 @@ date it applies to, the row notes when it was actually recorded.
 
 The buttons along the bottom:
 
-- **Copy JSON** — the complete raw response for that case
-- **Raw JSON** / **Headers** — show the underlying data
+- **Copy JSON** — bundles the raw `/cases/{receipt}` and `/case_status/{receipt}` responses
+- **Raw JSON** — shows that same two-response bundle; **Headers** shows the case-detail headers
 - **Re-fetch** — reload that case
 
 ## Your data
